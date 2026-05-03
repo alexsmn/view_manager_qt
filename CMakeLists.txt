@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.25)
 
 project(view_manager_qt LANGUAGES CXX)
 
+include(CTest)
+
 find_package(Qt5 COMPONENTS Widgets REQUIRED)
 
 add_library(view_manager_qt
@@ -26,3 +28,33 @@ target_link_libraries(view_manager_qt PUBLIC
 set_target_properties(view_manager_qt PROPERTIES
   AUTOMOC ON
 )
+
+option(VIEW_MANAGER_QT_BUILD_TESTS "Build view_manager_qt unit tests" ${BUILD_TESTING})
+
+if(VIEW_MANAGER_QT_BUILD_TESTS)
+  find_package(GTest REQUIRED)
+  include(GoogleTest)
+
+  add_executable(view_manager_qt_unittests
+    tests/dock_tab_widget_unittest.cpp
+    tests/view_manager_qt_component_integration_unittest.cpp
+    tests/view_manager_qt_component_unittest.cpp
+    tests/view_manager_qt_test_main.cpp
+  )
+
+  target_link_libraries(view_manager_qt_unittests PRIVATE
+    view_manager_qt
+    GTest::gmock
+    Qt5::Widgets
+  )
+
+  target_compile_definitions(view_manager_qt_unittests PRIVATE
+    VIEW_MANAGER_QT_TESTDATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/testdata"
+  )
+
+  set_target_properties(view_manager_qt_unittests PROPERTIES
+    AUTOMOC ON
+  )
+
+  gtest_discover_tests(view_manager_qt_unittests DISCOVERY_MODE PRE_TEST)
+endif()
