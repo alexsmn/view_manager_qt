@@ -1,4 +1,4 @@
-#include "main_window/qt/view_manager_qt_component.h"
+#include "view_manager_qt_component.h"
 
 #include "dock_tab_widget.h"
 
