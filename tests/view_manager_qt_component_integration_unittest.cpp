@@ -4,8 +4,13 @@
 #include <QDir>
 #include <QDockWidget>
 #include <QImage>
+#include <QLabel>
+#include <QListWidget>
 #include <QMainWindow>
 #include <QTabBar>
+#include <QTableWidget>
+#include <QTreeWidget>
+#include <QVBoxLayout>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -36,6 +41,75 @@ ViewManagerQtComponent::ViewInfo MakeView(
       .dock = dock,
       .dock_bottom = dock_bottom,
   };
+}
+
+std::unique_ptr<QListWidget> CreateEventList() {
+  auto list = std::make_unique<QListWidget>();
+  list->addItems({"Pump station online", "Operator acknowledged alarm",
+                  "Pressure normalized", "Backup generator ready"});
+  list->setCurrentRow(1);
+  return list;
+}
+
+std::unique_ptr<QTreeWidget> CreateAssetTree() {
+  auto tree = std::make_unique<QTreeWidget>();
+  tree->setHeaderLabels({"Asset", "State"});
+
+  auto* station = new QTreeWidgetItem{tree.get(), {"Station A", "Running"}};
+  new QTreeWidgetItem{station, {"Pump 1", "Nominal"}};
+  new QTreeWidgetItem{station, {"Pump 2", "Standby"}};
+
+  auto* remote = new QTreeWidgetItem{tree.get(), {"Remote Site", "Warning"}};
+  new QTreeWidgetItem{remote, {"RTU", "Connected"}};
+  new QTreeWidgetItem{remote, {"Battery", "Low"}};
+
+  tree->expandAll();
+  tree->setCurrentItem(remote->child(1));
+  return tree;
+}
+
+std::unique_ptr<QTableWidget> CreateTrendTable() {
+  auto table = std::make_unique<QTableWidget>(4, 3);
+  table->setHorizontalHeaderLabels({"Signal", "Value", "Quality"});
+  const QString rows[][3] = {
+      {"Flow", "124.6 m3/h", "Good"},
+      {"Pressure", "7.8 bar", "Good"},
+      {"Level", "62 %", "Good"},
+      {"Temperature", "43 C", "Good"},
+  };
+  for (int row = 0; row < 4; ++row) {
+    for (int column = 0; column < 3; ++column)
+      table->setItem(row, column, new QTableWidgetItem{rows[row][column]});
+  }
+  table->resizeColumnsToContents();
+  table->setCurrentCell(0, 1);
+  return table;
+}
+
+std::unique_ptr<QWidget> CreatePropertiesView() {
+  auto widget = std::make_unique<QWidget>();
+  auto* layout = new QVBoxLayout{widget.get()};
+  layout->setContentsMargins(8, 8, 8, 8);
+
+  auto* title = new QLabel{"Selected Asset"};
+  title->setStyleSheet("font-weight: 600");
+  layout->addWidget(title);
+
+  auto* properties = new QTableWidget{4, 2};
+  properties->setHorizontalHeaderLabels({"Property", "Value"});
+  const QString rows[][2] = {
+      {"Name", "Remote Site"},
+      {"Mode", "Automatic"},
+      {"Priority", "High"},
+      {"Owner", "Operations"},
+  };
+  for (int row = 0; row < 4; ++row) {
+    for (int column = 0; column < 2; ++column)
+      properties->setItem(row, column, new QTableWidgetItem{rows[row][column]});
+  }
+  properties->resizeColumnsToContents();
+  layout->addWidget(properties);
+  return widget;
 }
 
 void ProcessEvents() {
@@ -108,9 +182,9 @@ TEST_F(ViewManagerQtComponentIntegrationTest, PublicApiWorkflow) {
   QMainWindow main_window;
   ViewManagerQtComponent component{main_window};
 
-  auto primary = std::make_unique<QWidget>();
-  auto secondary = std::make_unique<QWidget>();
-  auto dock = std::make_unique<QWidget>();
+  auto primary = CreateEventList();
+  auto secondary = CreateAssetTree();
+  auto dock = CreatePropertiesView();
 
   std::vector<ViewManagerQtComponent::ViewId> closed_views;
   std::vector<std::optional<ViewManagerQtComponent::ViewId>> active_views;
@@ -186,10 +260,10 @@ TEST_F(ViewManagerQtComponentIntegrationTest, OpenLayoutRestoresSavedShape) {
   QMainWindow main_window;
   ViewManagerQtComponent component{main_window};
 
-  auto left = std::make_unique<QWidget>();
-  auto top_right = std::make_unique<QWidget>();
-  auto bottom_right = std::make_unique<QWidget>();
-  auto bottom_dock = std::make_unique<QWidget>();
+  auto left = CreateAssetTree();
+  auto top_right = CreateEventList();
+  auto bottom_right = CreateTrendTable();
+  auto bottom_dock = CreatePropertiesView();
 
   std::vector<ViewManagerQtComponent::ViewInfo> views{
       MakeView(1, *left, u"Left"),
