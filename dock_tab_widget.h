@@ -2,9 +2,8 @@
 
 #include <QTabBar>
 #include <QTabWidget>
+#include <QRubberBand>
 #include <memory>
-
-class QRubberBand;
 
 class DockTabBar : public QTabBar {
  public:
