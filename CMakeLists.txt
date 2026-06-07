@@ -4,7 +4,7 @@ project(view_manager_qt LANGUAGES CXX)
 
 include(CTest)
 
-find_package(Qt5 COMPONENTS Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Widgets REQUIRED)
 
 add_library(view_manager_qt
   dock_tab_widget.cpp
@@ -22,7 +22,7 @@ target_include_directories(view_manager_qt PUBLIC
 )
 
 target_link_libraries(view_manager_qt PUBLIC
-  Qt5::Widgets
+  Qt6::Widgets
 )
 
 set_target_properties(view_manager_qt PROPERTIES
@@ -45,7 +45,7 @@ if(VIEW_MANAGER_QT_BUILD_TESTS)
   target_link_libraries(view_manager_qt_unittests PRIVATE
     view_manager_qt
     GTest::gmock
-    Qt5::Widgets
+    Qt6::Widgets
   )
 
   target_compile_definitions(view_manager_qt_unittests PRIVATE

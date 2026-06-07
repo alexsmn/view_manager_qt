@@ -75,15 +75,15 @@ DockTabWidget* GetFirstTabBlock(QWidget& widget) {
 
 ViewManagerQtComponent::LayoutNode::LayoutNode() = default;
 ViewManagerQtComponent::LayoutNode::LayoutNode(LayoutNode&&) noexcept = default;
-ViewManagerQtComponent::LayoutNode& ViewManagerQtComponent::LayoutNode::
-operator=(LayoutNode&&) noexcept = default;
+ViewManagerQtComponent::LayoutNode&
+ViewManagerQtComponent::LayoutNode::operator=(LayoutNode&&) noexcept = default;
 ViewManagerQtComponent::LayoutNode::~LayoutNode() = default;
 
 ViewManagerQtComponent::ViewManagerQtComponent(QMainWindow& main_window)
     : main_window_{main_window} {
   auto* central_widget = new QWidget;
   central_widget->setLayout(new QHBoxLayout);
-  central_widget->layout()->setMargin(0);
+  central_widget->layout()->setContentsMargins(0, 0, 0, 0);
   main_window_.setCentralWidget(central_widget);
 
   QObject::connect(static_cast<QGuiApplication*>(QApplication::instance()),
@@ -159,9 +159,8 @@ ViewManagerQtComponent::SavedLayout ViewManagerQtComponent::SaveLayout(
   return layout;
 }
 
-void ViewManagerQtComponent::AddView(
-    const ViewInfo& view,
-    std::optional<ViewId> active_view_id) {
+void ViewManagerQtComponent::AddView(const ViewInfo& view,
+                                     std::optional<ViewId> active_view_id) {
   if (auto i = std::ranges::find(views_, view.id, &ViewInfo::id);
       i != views_.end()) {
     *i = view;
@@ -200,9 +199,8 @@ bool ViewManagerQtComponent::RemoveView(ViewId view_id) {
   std::erase(added_views_, view_id);
   std::erase_if(dock_widgets_,
                 [view_id](const auto& item) { return item.first == view_id; });
-  std::erase_if(views_, [view_id](const ViewInfo& view) {
-    return view.id == view_id;
-  });
+  std::erase_if(views_,
+                [view_id](const ViewInfo& view) { return view.id == view_id; });
   return true;
 }
 
@@ -258,7 +256,8 @@ void ViewManagerQtComponent::SetViewTitle(ViewId view_id,
 
 std::optional<ViewManagerQtComponent::ViewId>
 ViewManagerQtComponent::GetActiveViewId() const {
-  return FindViewIdByWidget(qobject_cast<QWidget*>(QApplication::focusObject()));
+  return FindViewIdByWidget(
+      qobject_cast<QWidget*>(QApplication::focusObject()));
 }
 
 std::unique_ptr<DockTabWidget> ViewManagerQtComponent::CreateTabBlock() {
@@ -492,7 +491,10 @@ void ViewManagerQtComponent::AddDockView(const ViewInfo& view) {
 
   QDockWidget* tabify_to = nullptr;
   if (view.tabify_existing_dock) {
-    for (auto* opened_dock : main_window_.findChildren<CustomDockWidget*>()) {
+    for (auto* dock_widget : main_window_.findChildren<QDockWidget*>()) {
+      auto* opened_dock = dynamic_cast<CustomDockWidget*>(dock_widget);
+      if (!opened_dock)
+        continue;
       if (main_window_.dockWidgetArea(opened_dock) == area) {
         tabify_to = opened_dock;
         break;
@@ -509,9 +511,8 @@ void ViewManagerQtComponent::AddDockView(const ViewInfo& view) {
   added_views_.emplace_back(view.id);
 }
 
-void ViewManagerQtComponent::AddTabView(
-    const ViewInfo& view,
-    std::optional<ViewId> active_view_id) {
+void ViewManagerQtComponent::AddTabView(const ViewInfo& view,
+                                        std::optional<ViewId> active_view_id) {
   assert(view.widget);
   assert(!IsViewAdded(view.id));
 
@@ -553,9 +554,8 @@ bool ViewManagerQtComponent::IsViewAdded(ViewId view_id) const {
 }
 
 QDockWidget* ViewManagerQtComponent::GetDockWidget(ViewId view_id) const {
-  auto i = std::ranges::find(dock_widgets_, view_id, [](const auto& item) {
-    return item.first;
-  });
+  auto i = std::ranges::find(dock_widgets_, view_id,
+                             [](const auto& item) { return item.first; });
   return i != dock_widgets_.end() ? i->second : nullptr;
 }
 
