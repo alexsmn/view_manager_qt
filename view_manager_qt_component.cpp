@@ -213,6 +213,14 @@ void ViewManagerQtComponent::ActivateView(ViewId view_id) {
     auto index = tabs->indexOf(view->widget);
     assert(index != -1);
     tabs->setCurrentIndex(index);
+  } else if (auto* dock = GetDockWidget(view_id)) {
+    // A docked view has no DockTabWidget above it — its parent chain is
+    // QDockWidget -> QMainWindow — so GetTabWidget returns null and the branch
+    // above cannot front it. When docks are tabified together, raise() is what
+    // selects the dock's tab; without it activating a pane only moved focus and
+    // left the wrong pane on top.
+    dock->show();
+    dock->raise();
   }
 
   view->widget->setFocus(Qt::ActiveWindowFocusReason);
