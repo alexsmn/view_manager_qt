@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "view-manager-qt",
+  "version": "1.0.0",
+  "description": "Qt6 dock/view manager widget",
+  "$comment": "Qt6 is a HOST PREREQUISITE, not a dependency here: this library finds it via CMAKE_PREFIX_PATH (Homebrew Qt on macOS), which is what every preset in this tree actually uses. graph_qt, client and designer instead declare qtbase and so ask vcpkg to build Qt from source — see the host-prerequisites task.",
+  "dependencies": [
+    "gtest"
+  ]
+}
