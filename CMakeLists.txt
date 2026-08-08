@@ -59,6 +59,8 @@ if(VIEW_MANAGER_QT_BUILD_TESTS)
 
   add_executable(view_manager_qt_unittests
     tests/dock_tab_widget_unittest.cpp
+    tests/golden_image.h
+    tests/golden_image_unittest.cpp
     tests/view_manager_qt_component_integration_unittest.cpp
     tests/view_manager_qt_component_unittest.cpp
     tests/view_manager_qt_test_main.cpp

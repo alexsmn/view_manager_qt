@@ -43,6 +43,12 @@ The integration tests compare rendered widget output against golden images in
 
 When comparison fails, the actual output is saved as `testdata/actual_*.png`.
 
+Deleting the image is the *only* way to ask for a regenerated golden. A file
+that is present but cannot be decoded — a truncated PNG, or any PNG at all in a
+build without the codec — fails the test instead, because regenerating there
+would silently replace a reviewed baseline with whatever the current code
+renders. Restore such a file from git rather than deleting it.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).
