@@ -9,6 +9,7 @@
       "name": "qtbase",
       "default-features": false,
       "features": [
+        "png",
         "widgets"
       ]
     },
@@ -21,8 +22,18 @@
       "name": "qtbase",
       "default-features": false,
       "features": [
+        "png",
         "widgets"
       ]
     }
+  ],
+  "$comment": [
+    "qtbase's `png` feature is required, not cosmetic: the component integration",
+    "tests compare a rendered QImage against a golden PNG in testdata/. Without",
+    "the qpng image-format plugin QImage can neither load the golden nor save a",
+    "new one, and both golden tests fail with 'Failed to save golden image'.",
+    "Declared 2026-08-08 (ADR 0011 phase 2) -- until this repo built standalone",
+    "the plugin always arrived through the client's own qtbase, so nothing here",
+    "had to ask for it."
   ]
 }
