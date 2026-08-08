@@ -1,5 +1,7 @@
 #include "view_manager_qt_component.h"
 
+#include "golden_image.h"
+
 #include <QApplication>
 #include <QDir>
 #include <QDockWidget>
@@ -7,11 +9,11 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QMainWindow>
+#include <QStyle>
 #include <QTabBar>
 #include <QTableWidget>
 #include <QTreeWidget>
 #include <QVBoxLayout>
-#include <QStyle>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -25,12 +27,11 @@ using testing::ElementsAre;
 
 namespace {
 
-ViewManagerQtComponent::ViewInfo MakeView(
-    ViewManagerQtComponent::ViewId id,
-    QWidget& widget,
-    std::u16string title,
-    bool dock = false,
-    bool dock_bottom = false) {
+ViewManagerQtComponent::ViewInfo MakeView(ViewManagerQtComponent::ViewId id,
+                                          QWidget& widget,
+                                          std::u16string title,
+                                          bool dock = false,
+                                          bool dock_bottom = false) {
   widget.setObjectName(QString{"view_%1_widget"}.arg(id));
   widget.setFocusPolicy(Qt::StrongFocus);
 
@@ -166,17 +167,32 @@ class ViewManagerQtComponentIntegrationTest : public testing::Test {
     QApplication::setPalette(QApplication::style()->standardPalette());
   }
 
+  // Compares the rendered window against the golden image `name` in testdata,
+  // creating the golden when none exists yet and skipping the test so the next
+  // run verifies against it.
+  //
+  // A golden that exists but does not decode is a failure, never a missing
+  // golden: it means the baseline is damaged, and regenerating one there would
+  // replace a reviewed image with whatever the current code renders.
   void ExpectMatchesGolden(QMainWindow& main_window, const QString& name) {
     QImage actual = RenderMainWindow(main_window);
     QDir testdata_dir{VIEW_MANAGER_QT_TESTDATA_DIR};
     testdata_dir.mkpath(".");
 
     const QString golden_path = testdata_dir.filePath(name);
-    QImage expected{golden_path};
-    if (expected.isNull()) {
-      ASSERT_TRUE(actual.save(golden_path))
-          << "Failed to save golden image: " << golden_path.toStdString();
-      GTEST_SKIP() << "Golden image created. Re-run test to verify.";
+    QImage expected;
+    switch (view_manager_qt_test::LoadGoldenImage(golden_path, expected)) {
+      case view_manager_qt_test::GoldenLoadResult::kLoaded:
+        break;
+      case view_manager_qt_test::GoldenLoadResult::kAbsent:
+        ASSERT_TRUE(view_manager_qt_test::SaveGoldenImage(actual, golden_path))
+            << "Failed to save golden image: " << golden_path.toStdString();
+        GTEST_SKIP() << "Golden image created. Re-run test to verify.";
+      case view_manager_qt_test::GoldenLoadResult::kUnreadable:
+        FAIL() << "Golden image exists but cannot be decoded: "
+               << golden_path.toStdString()
+               << ". Restore it from git rather than regenerating it: this "
+                  "build may simply be missing the image codec.";
     }
 
     const int diff_pixels = CompareImages(actual, expected);
@@ -184,6 +200,8 @@ class ViewManagerQtComponentIntegrationTest : public testing::Test {
 #if defined(Q_OS_MACOS)
       GTEST_SKIP() << "Golden rendering is platform-specific on macOS.";
 #else
+      // Debug output only, and deliberately not a golden path: a failed write
+      // here costs nothing but a missing artifact.
       const QString actual_path = testdata_dir.filePath("actual_" + name);
       actual.save(actual_path);
       FAIL() << "Rendering differs from golden image by " << diff_pixels
@@ -249,15 +267,14 @@ TEST_F(ViewManagerQtComponentIntegrationTest, PublicApiWorkflow) {
   auto& tabs = FindTabsContaining(main_window, *primary);
   auto* tab_bar = tabs.tabBar();
   const QPoint tab_pos = tab_bar->tabRect(tabs.indexOf(primary.get())).center();
-  ASSERT_TRUE(QMetaObject::invokeMethod(
-      tab_bar, "customContextMenuRequested", Q_ARG(QPoint, tab_pos)));
+  ASSERT_TRUE(QMetaObject::invokeMethod(tab_bar, "customContextMenuRequested",
+                                        Q_ARG(QPoint, tab_pos)));
 
   EXPECT_THAT(popup_views, ElementsAre(views[0].id));
   EXPECT_FALSE(popup_points.empty());
 
   auto layout = component.SaveLayout(views);
-  EXPECT_EQ(layout.main.type,
-            ViewManagerQtComponent::LayoutNode::Type::Split);
+  EXPECT_EQ(layout.main.type, ViewManagerQtComponent::LayoutNode::Type::Split);
   EXPECT_FALSE(layout.main.split_vertical);
   EXPECT_FALSE(layout.dock_state_blob.empty());
 
