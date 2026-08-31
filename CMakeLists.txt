@@ -83,10 +83,18 @@ if(VIEW_MANAGER_QT_BUILD_TESTS)
   # PublicApiWorkflow shows a real QMainWindow and asserts on window
   # activation, active-view focus, and a tab context menu. Those depend on the
   # process owning the GUI focus, so running it alongside other Qt test
-  # processes makes it flaky (a competing window steals activation and the
-  # focus assertions fail before the test reaches its macOS golden-image skip).
-  # Register it on its own with RUN_SERIAL so ctest never schedules it next to
-  # another test; the remaining tests keep running in parallel.
+  # processes makes it flaky. Register it on its own with RUN_SERIAL so ctest
+  # never schedules it next to another test; the remaining tests keep running
+  # in parallel.
+  #
+  # RUN_SERIAL narrows the window but cannot close it, and this comment used to
+  # imply otherwise. Window activation is machine-wide: ctest can stop a
+  # *sibling test* contending for it, and nothing here can stop a foreground
+  # application that is not a test at all -- a client left running on the
+  # developer's desktop is enough, and reproduced this failure 5/5. The test
+  # itself therefore gates its focus-derived assertions on
+  # `isActiveWindow()`; see the comment at that gate for why the coverage is
+  # not lost.
   set(view_manager_qt_isolated_test
       "ViewManagerQtComponentIntegrationTest.PublicApiWorkflow")
   gtest_discover_tests(view_manager_qt_unittests DISCOVERY_MODE PRE_TEST
