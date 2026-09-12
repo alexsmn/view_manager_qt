@@ -8,6 +8,7 @@
 #include <QHBoxLayout>
 #include <QMainWindow>
 #include <QSplitter>
+#include <QToolButton>
 
 #include <algorithm>
 #include <cassert>
@@ -106,6 +107,11 @@ void ViewManagerQtComponent::SetActiveViewChangedHandler(
 void ViewManagerQtComponent::SetTabPopupMenuHandler(
     std::function<void(ViewId, const QPoint&)> handler) {
   tab_popup_menu_handler_ = std::move(handler);
+}
+
+void ViewManagerQtComponent::SetNewTabHandler(
+    std::function<void(const QPoint&)> handler) {
+  new_tab_handler_ = std::move(handler);
 }
 
 void ViewManagerQtComponent::OpenLayout(std::span<const ViewInfo> views,
@@ -307,6 +313,37 @@ std::unique_ptr<DockTabWidget> ViewManagerQtComponent::CreateTabBlock() {
         if (source.count() == 0)
           DeleteTabBlock(source, true);
       });
+
+  // The "new view" button, at the end of the strip. Only when the host wants
+  // one: an unwired `+` would offer an action nothing performs.
+  if (new_tab_handler_) {
+    auto* add_button = new QToolButton{tabs_ptr};
+    add_button->setObjectName(QStringLiteral("newViewButton"));
+    add_button->setText(QStringLiteral("+"));
+    add_button->setAutoRaise(true);
+    // The glyph is not a label, so name the button for keyboard and screen
+    // reader users; the host's menu states the subject in full.
+    add_button->setAccessibleName(tr("New view"));
+    add_button->setToolTip(add_button->accessibleName());
+    QObject::connect(
+        add_button, &QToolButton::clicked, this, [this, tabs_ptr, add_button] {
+          if (!new_tab_handler_)
+            return;
+          // Make this strip current first -- see the comment on
+          // SetNewTabHandler. A block with no current view (it is
+          // being torn down) simply does not reorder anything.
+          if (QWidget* current = tabs_ptr->currentWidget()) {
+            if (auto view_id = FindViewIdByWidget(current))
+              ActivateView(*view_id);
+          }
+          // Below the button rather than at the cursor, so the
+          // menu hangs off the control that opened it wherever it
+          // was clicked.
+          new_tab_handler_(
+              add_button->mapToGlobal(QPoint{0, add_button->height()}));
+        });
+    tabs_ptr->setCornerWidget(add_button, Qt::TopRightCorner);
+  }
 
   auto tab_bar = tabs_ptr->tabBar();
   tab_bar->setContextMenuPolicy(Qt::CustomContextMenu);

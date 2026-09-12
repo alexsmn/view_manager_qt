@@ -58,7 +58,21 @@ class ViewManagerQtComponent final : public QObject {
   void SetCloseViewHandler(std::function<void(ViewId)> handler);
   void SetActiveViewChangedHandler(
       std::function<void(std::optional<ViewId>)> handler);
-  void SetTabPopupMenuHandler(std::function<void(ViewId, const QPoint&)> handler);
+  void SetTabPopupMenuHandler(
+      std::function<void(ViewId, const QPoint&)> handler);
+  // Offers a "new view" button at the end of every tab strip, and calls
+  // `handler` with the position to show a menu at when one is pressed.
+  //
+  // Unset, no button is drawn at all -- a `+` that does nothing is worse than
+  // no `+`. It is read when a tab block is created, so set it before the first
+  // OpenLayout/AddView, alongside the other handlers; blocks that already exist
+  // are not revisited.
+  //
+  // The button belongs to the strip it sits in: pressing it makes that strip's
+  // current view active before `handler` runs, so a host that opens the new
+  // view beside the active one puts it in the strip the user actually clicked
+  // rather than in whichever block happened to be active.
+  void SetNewTabHandler(std::function<void(const QPoint&)> handler);
 
   void OpenLayout(std::span<const ViewInfo> views, const SavedLayout& layout);
   SavedLayout SaveLayout(std::span<const ViewInfo> views);
@@ -104,4 +118,5 @@ class ViewManagerQtComponent final : public QObject {
   std::function<void(ViewId)> close_view_handler_;
   std::function<void(std::optional<ViewId>)> active_view_changed_handler_;
   std::function<void(ViewId, const QPoint&)> tab_popup_menu_handler_;
+  std::function<void(const QPoint&)> new_tab_handler_;
 };

@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QTabBar>
 #include <QTabWidget>
+#include <QToolButton>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -209,4 +210,102 @@ TEST(ViewManagerQtComponentTest, ActivateViewSelectsTheTabOfANonDockedView) {
   component.ActivateView(first.id);
   QApplication::processEvents();
   EXPECT_EQ(tabs[0]->currentWidget(), first_widget);
+}
+
+// The "new view" button on the tab strip. Drawn only when the host wants one:
+// an unwired `+` would offer an action nothing performs, which is worse than
+// offering nothing.
+TEST(ViewManagerQtComponentTest, NoNewViewButtonWithoutAHandler) {
+  QMainWindow main_window;
+  ViewManagerQtComponent component{main_window};
+
+  auto* widget = new QWidget;
+  auto view = MakeView(1, *widget, u"One");
+  component.AddView(view, std::nullopt);
+
+  auto tabs = main_window.findChildren<QTabWidget*>();
+  ASSERT_EQ(tabs.size(), 1);
+  EXPECT_EQ(tabs[0]->cornerWidget(Qt::TopRightCorner), nullptr);
+}
+
+TEST(ViewManagerQtComponentTest, NewViewButtonCallsTheHandlerWhereItSits) {
+  QMainWindow main_window;
+  ViewManagerQtComponent component{main_window};
+
+  std::vector<QPoint> points;
+  component.SetNewTabHandler(
+      [&](const QPoint& point) { points.emplace_back(point); });
+
+  auto* widget = new QWidget;
+  auto view = MakeView(1, *widget, u"One");
+  component.AddView(view, std::nullopt);
+
+  auto tabs = main_window.findChildren<QTabWidget*>();
+  ASSERT_EQ(tabs.size(), 1);
+  auto* button =
+      qobject_cast<QToolButton*>(tabs[0]->cornerWidget(Qt::TopRightCorner));
+  ASSERT_NE(button, nullptr);
+
+  button->click();
+  QApplication::processEvents();
+
+  ASSERT_EQ(points.size(), 1u);
+  // Below the button, not at the cursor: the menu hangs off the control that
+  // opened it. Global coordinates, so only the relation to the button is
+  // assertable without a shown window.
+  EXPECT_EQ(points[0], button->mapToGlobal(QPoint{0, button->height()}));
+}
+
+// One button per strip, because a split makes a second strip and the mockup's
+// `+` belongs to the strip it sits in
+// (docs/product/ui-mockups/screens/shell-chrome.html).
+TEST(ViewManagerQtComponentTest, EachTabStripCarriesItsOwnNewViewButton) {
+  QMainWindow main_window;
+  ViewManagerQtComponent component{main_window};
+  component.SetNewTabHandler([](const QPoint&) {});
+
+  auto* first_widget = new QWidget;
+  auto* second_widget = new QWidget;
+  auto first = MakeView(1, *first_widget, u"First");
+  auto second = MakeView(2, *second_widget, u"Second");
+  component.AddView(first, std::nullopt);
+  component.AddView(second, first.id);
+  component.SplitView(second.id, /*vertically=*/false);
+
+  auto tabs = main_window.findChildren<QTabWidget*>();
+  ASSERT_EQ(tabs.size(), 2);
+  for (QTabWidget* strip : tabs) {
+    EXPECT_NE(strip->cornerWidget(Qt::TopRightCorner), nullptr);
+  }
+}
+
+// Pressing a strip's `+` calls the handler even when that strip's view is not
+// the active one -- the button must not be gated on activation, which is
+// machine state this process does not own (see the integration test's note).
+TEST(ViewManagerQtComponentTest, NewViewButtonWorksInANonActiveStrip) {
+  QMainWindow main_window;
+  ViewManagerQtComponent component{main_window};
+
+  int calls = 0;
+  component.SetNewTabHandler([&](const QPoint&) { ++calls; });
+
+  auto* first_widget = new QWidget;
+  auto* second_widget = new QWidget;
+  auto first = MakeView(1, *first_widget, u"First");
+  auto second = MakeView(2, *second_widget, u"Second");
+  component.AddView(first, std::nullopt);
+  component.AddView(second, first.id);
+  component.SplitView(second.id, /*vertically=*/false);
+
+  auto tabs = main_window.findChildren<QTabWidget*>();
+  ASSERT_EQ(tabs.size(), 2);
+  for (QTabWidget* strip : tabs) {
+    auto* button =
+        qobject_cast<QToolButton*>(strip->cornerWidget(Qt::TopRightCorner));
+    ASSERT_NE(button, nullptr);
+    button->click();
+  }
+  QApplication::processEvents();
+
+  EXPECT_EQ(calls, 2);
 }
