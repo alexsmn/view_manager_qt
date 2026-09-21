@@ -54,7 +54,7 @@ and truncates its destination before it discovers it has no encoder, which is
 why `scada::qt_test::SaveGoldenImage` encodes to a scratch sibling and renames
 into place only once the file is whole.
 
-**The helper is shared, not copied.** It was `tests/golden_image.h`, a
+**The helper is shared, not copied.** It was ~~`tests/golden_image.h`~~, a
 byte-identical twin of `graph_qt`'s bar the include guard and namespace, with a
 second copy of its 147-line test beside it, until 2026-09-20. Both now live in
 the kit, which every export carries at this product's root, and this product's
