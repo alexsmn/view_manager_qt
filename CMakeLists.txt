@@ -28,6 +28,16 @@ include(CTest)
 
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
 
+# The shared kit is on the include path so a test entry point can say
+# `#include "scada_qt_offscreen_platform.h"`. It resolves in both layouts --
+# SCADA_PRODUCT_SEARCH_ROOT is the tree root in the monorepo and this product
+# root in an export, and `build-support/` sits beneath it in both -- and it is
+# set here rather than by scada_qt_import_offscreen_platform_into_tests(),
+# which returns early on a Qt with no offscreen plugin. Tying the include path
+# to that guard would turn a missing plugin into a compile error in the file
+# that exists to cope with one.
+include_directories("${SCADA_BUILD_SUPPORT_DIR}")
+
 add_library(view_manager_qt
   dock_tab_widget.cpp
   dock_tab_widget.h
@@ -103,3 +113,17 @@ if(VIEW_MANAGER_QT_BUILD_TESTS)
     TEST_FILTER "${view_manager_qt_isolated_test}"
     PROPERTIES RUN_SERIAL TRUE)
 endif()
+
+# Last, because it walks the targets that exist by now: the test executable
+# gets the offscreen platform plugin linked in, so a static Qt can honour the
+# headless default `view_manager_qt_test_main.cpp` applies on macOS and so
+# `QT_QPA_PLATFORM=offscreen` works for a standalone ctest run.
+#
+# Neither was true until 2026-09-20 (backlog 808). The plugin is built by
+# qtbase's `freetype` feature, which this product's manifest did not ask for
+# with default features off, so a standalone Qt here had cocoa and minimal and
+# nothing else; and the test main built a bare QApplication, so a `ctest` sweep
+# bounced a Dock icon once per case. Spliced into the client both were masked --
+# the client's qtbase keeps its default features, and since 799 the client's own
+# root call reaches this target.
+scada_qt_import_offscreen_platform_into_tests()

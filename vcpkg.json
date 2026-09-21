@@ -9,8 +9,13 @@
       "name": "qtbase",
       "default-features": false,
       "features": [
+        "freetype",
         "png",
-        "widgets"
+        "widgets",
+        {
+          "name": "fontconfig",
+          "platform": "linux"
+        }
       ]
     },
     "gtest"
@@ -22,8 +27,13 @@
       "name": "qtbase",
       "default-features": false,
       "features": [
+        "freetype",
         "png",
-        "widgets"
+        "widgets",
+        {
+          "name": "fontconfig",
+          "platform": "linux"
+        }
       ]
     }
   ],
