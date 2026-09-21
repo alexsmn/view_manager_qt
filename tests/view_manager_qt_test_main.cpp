@@ -1,9 +1,9 @@
-#include <QApplication>
-#include <gmock/gmock.h>
-
 // From build-support/, put on the include path by the product root; see the
 // header for why it lives there and not beside this file.
 #include "scada_qt_offscreen_platform.h"
+
+#include <QApplication>
+#include <gmock/gmock.h>
 
 int main(int argc, char** argv) {
   testing::InitGoogleMock(&argc, argv);
