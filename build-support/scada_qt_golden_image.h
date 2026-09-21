@@ -1,5 +1,34 @@
-#ifndef VIEW_MANAGER_QT_TESTS_GOLDEN_IMAGE_H_
-#define VIEW_MANAGER_QT_TESTS_GOLDEN_IMAGE_H_
+#pragma once
+
+// Reading and writing golden images for a Qt render test, in the one place
+// every product can reach.
+//
+// It lives in `build-support/` for the same reason
+// `scada_qt_offscreen_platform.h` beside it does: the products that need it
+// may not include from one another (ADR 0011), and each is a leaf that
+// consumes no product at all. `graph_qt` and `view_manager_qt` carried
+// byte-identical copies -- differing only in include guard and namespace --
+// until 2026-09-20, and so did the 147-line test below them.
+//
+// That duplication was not theoretical. `SaveGoldenImage` exists because
+// QImageWriter opens and truncates its destination before it discovers it has
+// no codec, so a run without the PNG plugin left a 0-byte file where a tracked
+// baseline was -- which the next run read as "no golden yet" and regenerated
+// from whatever the current code rendered. It happened on 2026-08-08 and cost
+// two of view_manager_qt's goldens. A safety fix kept in two hand-synced
+// copies is exactly the one you do not want drifting.
+//
+// A product reaches this by putting the kit on its test targets' include path:
+// one `include_directories("${SCADA_BUILD_SUPPORT_DIR}")` at the product root,
+// which resolves to the tree root in the monorepo and the product root in an
+// export. Unlike its neighbour this header DOES use Qt -- that costs nothing,
+// because a header is only compiled where it is included, and the four
+// products that add the kit to their include path are the Qt ones.
+//
+// `display` and `designer` are deliberately not consumers. Their golden tests
+// write only scratch `actual`/`diff` artifacts and never the baseline, and
+// they skip or fail rather than regenerate, so the hazard this contains does
+// not arise there.
 
 #include <QFile>
 #include <QImage>
@@ -7,7 +36,7 @@
 
 #include <functional>
 
-namespace view_manager_qt_test {
+namespace scada::qt_test {
 
 // Outcome of reading a golden image from disk.
 //
@@ -105,6 +134,4 @@ inline bool SaveGoldenImage(const QImage& image, const QString& path) {
                          });
 }
 
-}  // namespace view_manager_qt_test
-
-#endif  // VIEW_MANAGER_QT_TESTS_GOLDEN_IMAGE_H_
+}  // namespace scada::qt_test

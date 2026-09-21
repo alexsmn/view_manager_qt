@@ -2,3 +2,14 @@
 # ...but build-support/ is the shared CMake kit an export of this product carries
 # at its root. It only looks like a build directory (ADR 0011).
 !/build-support/
+
+# Golden-image scratch output. A failing comparison saves the render beside the
+# tracked baseline as `testdata/actual_<name>.png` so it can be looked at, and
+# scada_qt_golden_image.h encodes through `<name>.tmp.png` / `<name>.bak.png`
+# siblings so a failed encode cannot truncate a baseline. None of them is a
+# baseline, and leaving them untracked-but-not-ignored means a genuine
+# rendering regression also leaves the tree dirty -- one `git add -A` away from
+# committing a scratch render as if it were reviewed test data.
+/testdata/actual_*
+/testdata/*.tmp.*
+/testdata/*.bak.*

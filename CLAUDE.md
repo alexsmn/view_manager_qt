@@ -36,3 +36,28 @@ The helper is `build-support/scada_qt_offscreen_platform.h` — shared, not
 copied, because this product may include from no other one — and it is
 reached through the `include_directories("${SCADA_BUILD_SUPPORT_DIR}")` near
 the top of `CMakeLists.txt`.
+
+## Golden images
+
+`tests/view_manager_qt_component_integration_unittest.cpp` compares rendered
+output against the tracked PNGs in `testdata/`. Read and write them through
+`build-support/scada_qt_golden_image.h` (namespace `scada::qt_test`) — never
+`QImage::save()` onto a golden path directly.
+
+**Deleting a golden is the only way to ask for a new baseline.** A golden that
+is present but does not decode — truncated, corrupt, or a build without the PNG
+codec — fails the test and says to restore it from git; it is never treated as
+"no baseline yet". The two used to be one condition, and that cost this
+product two goldens on 2026-08-08: a run without the codec zeroed them and the
+next run rebaselined from whatever it had just rendered. `QImageWriter` opens
+and truncates its destination before it discovers it has no encoder, which is
+why `scada::qt_test::SaveGoldenImage` encodes to a scratch sibling and renames
+into place only once the file is whole.
+
+**The helper is shared, not copied.** It was `tests/golden_image.h`, a
+byte-identical twin of `graph_qt`'s bar the include guard and namespace, with a
+second copy of its 147-line test beside it, until 2026-09-20. Both now live in
+the kit, which every export carries at this product's root, and this product's
+test executable names
+`${SCADA_BUILD_SUPPORT_DIR}/scada_qt_golden_image_unittest.cpp` as a source, so
+the helper is still verified in this product's own build.

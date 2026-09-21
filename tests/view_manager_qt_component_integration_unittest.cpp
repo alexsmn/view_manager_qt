@@ -1,6 +1,6 @@
 #include "view_manager_qt_component.h"
 
-#include "golden_image.h"
+#include "scada_qt_golden_image.h"
 
 #include <QApplication>
 #include <QDir>
@@ -181,14 +181,14 @@ class ViewManagerQtComponentIntegrationTest : public testing::Test {
 
     const QString golden_path = testdata_dir.filePath(name);
     QImage expected;
-    switch (view_manager_qt_test::LoadGoldenImage(golden_path, expected)) {
-      case view_manager_qt_test::GoldenLoadResult::kLoaded:
+    switch (scada::qt_test::LoadGoldenImage(golden_path, expected)) {
+      case scada::qt_test::GoldenLoadResult::kLoaded:
         break;
-      case view_manager_qt_test::GoldenLoadResult::kAbsent:
-        ASSERT_TRUE(view_manager_qt_test::SaveGoldenImage(actual, golden_path))
+      case scada::qt_test::GoldenLoadResult::kAbsent:
+        ASSERT_TRUE(scada::qt_test::SaveGoldenImage(actual, golden_path))
             << "Failed to save golden image: " << golden_path.toStdString();
         GTEST_SKIP() << "Golden image created. Re-run test to verify.";
-      case view_manager_qt_test::GoldenLoadResult::kUnreadable:
+      case scada::qt_test::GoldenLoadResult::kUnreadable:
         FAIL() << "Golden image exists but cannot be decoded: "
                << golden_path.toStdString()
                << ". Restore it from git rather than regenerating it: this "

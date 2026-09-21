@@ -1,4 +1,9 @@
-#include "golden_image.h"
+// The test for `scada_qt_golden_image.h` beside it. One copy, compiled by
+// every product that uses the header, so each still verifies it in its own
+// build while there is a single place to change. It was 147 duplicated lines
+// in `graph_qt` and `view_manager_qt` until 2026-09-20.
+
+#include "scada_qt_golden_image.h"
 
 #include <gtest/gtest.h>
 
@@ -6,7 +11,7 @@
 #include <QFile>
 #include <QTemporaryDir>
 
-namespace view_manager_qt_test {
+namespace scada::qt_test {
 namespace {
 
 // Bitmap is handled by QtGui itself, so a round trip through it works in a
@@ -144,4 +149,4 @@ TEST_F(GoldenImageTest, SuccessfulSaveReplacesAnExistingFile) {
 }
 
 }  // namespace
-}  // namespace view_manager_qt_test
+}  // namespace scada::qt_test
