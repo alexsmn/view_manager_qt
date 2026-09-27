@@ -40,7 +40,14 @@ the top of `CMakeLists.txt`.
 ## Golden images
 
 `tests/view_manager_qt_component_integration_unittest.cpp` compares rendered
-output against the tracked PNGs in `testdata/`. Read and write them through
+output against the tracked PNGs in `testdata/`. **They are per platform**,
+because offscreen Qt draws text with the host's fonts: the top of `testdata/`
+is the Windows set, `testdata/linux/` the Linux set, recorded on the Qt
+client's CI `ubuntu-latest` runner (2026-09-27), which checks this product out
+as a sibling and runs its suite; macOS compares against the Windows set and
+only logs a mismatch. A missing Linux golden is written by the test, which
+then skips, and that CI job uploads it as the `linux-goldens` artifact to
+review and commit. Read and write them through
 `build-support/scada_qt_golden_image.h` (namespace `scada::qt_test`) — never
 `QImage::save()` onto a golden path directly.
 
