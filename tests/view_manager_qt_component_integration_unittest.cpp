@@ -176,7 +176,17 @@ class ViewManagerQtComponentIntegrationTest : public testing::Test {
   // replace a reviewed image with whatever the current code renders.
   void ExpectMatchesGolden(QMainWindow& main_window, const QString& name) {
     QImage actual = RenderMainWindow(main_window);
+    // Per platform, because offscreen Qt draws text with the host's fonts:
+    // the images at the top of testdata/ are Windows renders, and Linux keeps
+    // its own set in testdata/linux/, recorded on CI's ubuntu-latest runner
+    // (it differed from the Windows set by ~100k pixels with nothing wrong,
+    // scada-client run 36306873339). macOS compares against the Windows set
+    // and only logs a mismatch, below.
+#if defined(Q_OS_LINUX)
+    QDir testdata_dir{QStringLiteral(VIEW_MANAGER_QT_TESTDATA_DIR "/linux")};
+#else
     QDir testdata_dir{VIEW_MANAGER_QT_TESTDATA_DIR};
+#endif
     testdata_dir.mkpath(".");
 
     const QString golden_path = testdata_dir.filePath(name);
