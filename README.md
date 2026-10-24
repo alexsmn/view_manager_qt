@@ -27,7 +27,7 @@ The package defines:
 
 ## Requirements
 
-- CMake 3.25 or newer
+- CMake 3.27 or newer
 - C++20
 - Qt5 Widgets
 
