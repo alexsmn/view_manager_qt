@@ -42,7 +42,9 @@ the top of `CMakeLists.txt`.
 `tests/view_manager_qt_component_integration_unittest.cpp` compares rendered
 output against the tracked PNGs in `testdata/`. **They are per platform**,
 because offscreen Qt draws text with the host's fonts: the top of `testdata/`
-is the Windows set, `testdata/linux/` the Linux set, recorded on the Qt
+is the native Windows set, `testdata/windows-offscreen/` the Windows set
+under the offscreen platform (the client's Windows CI leg, whose job uploads a
+missing one as `windows-offscreen-goldens`), `testdata/linux/` the Linux set, recorded on the Qt
 client's CI `ubuntu-latest` runner (2026-09-27), which checks this product out
 as a sibling and runs its suite; macOS compares against the Windows set and
 only logs a mismatch. A missing Linux golden is written by the test, which

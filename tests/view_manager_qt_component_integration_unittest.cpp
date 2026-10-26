@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QDir>
 #include <QDockWidget>
+#include <QGuiApplication>
 #include <QImage>
 #include <QLabel>
 #include <QListWidget>
@@ -180,10 +181,18 @@ class ViewManagerQtComponentIntegrationTest : public testing::Test {
     // the images at the top of testdata/ are Windows renders, and Linux keeps
     // its own set in testdata/linux/, recorded on CI's ubuntu-latest runner
     // (it differed from the Windows set by ~100k pixels with nothing wrong,
-    // scada-client run 36306873339). macOS compares against the Windows set
-    // and only logs a mismatch, below.
+    // scada-client run 36306873339). Windows has two: the top level is the
+    // native `windows` platform, and windows-offscreen/ is the offscreen one
+    // CI's Windows leg runs on (87k-116k pixels from the native set,
+    // scada-client run 40138625293). macOS compares against the native
+    // Windows set and only logs a mismatch, below.
 #if defined(Q_OS_LINUX)
     QDir testdata_dir{QStringLiteral(VIEW_MANAGER_QT_TESTDATA_DIR "/linux")};
+#elif defined(Q_OS_WIN)
+    QDir testdata_dir{
+        QGuiApplication::platformName() == QLatin1String("offscreen")
+            ? QStringLiteral(VIEW_MANAGER_QT_TESTDATA_DIR "/windows-offscreen")
+            : QStringLiteral(VIEW_MANAGER_QT_TESTDATA_DIR)};
 #else
     QDir testdata_dir{VIEW_MANAGER_QT_TESTDATA_DIR};
 #endif
