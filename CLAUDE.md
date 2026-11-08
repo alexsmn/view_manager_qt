@@ -53,7 +53,16 @@ review and commit. Read and write them through
 `build-support/scada_qt_golden_image.h` (namespace `scada::qt_test`) — never
 `QImage::save()` onto a golden path directly.
 
-**Deleting a golden is the only way to ask for a new baseline.** A golden that
+**A Qt bump moves the Linux set, and the fix is a reviewed re-record, not a
+delete.** The Linux leg's `linux-goldens` artifact also carries the
+`actual_<name>.png` of every mismatch, so the new baseline is already in hand:
+diff it against the golden, confirm the differences are confined to glyphs,
+and copy it over. Re-recorded that way on 2026-11-08, when the vcpkg bump to
+Qt 6.11.2 changed Linux text rasterization by 1.7k–13.8k pixels per image
+with every line, fill and layout unchanged (scada-client run 42506651766);
+Windows and macOS were unaffected.
+
+**The test regenerates a golden only when it is missing.** A golden that
 is present but does not decode — truncated, corrupt, or a build without the PNG
 codec — fails the test and says to restore it from git; it is never treated as
 "no baseline yet". The two used to be one condition, and that cost this
